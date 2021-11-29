@@ -44,14 +44,14 @@ func NewHTTPServer(options *Options) (*HTTPServer, error) {
 
 	server := &HTTPServer{options: options, domain: strings.TrimSuffix(options.Domain, ".")}
 
-	router := &http.ServeMux{}
-	router.Handle("/", server.logger(http.HandlerFunc(server.defaultHandler)))
-	router.Handle("/register", server.corsMiddleware(server.authMiddleware(http.HandlerFunc(server.registerHandler))))
-	router.Handle("/deregister", server.corsMiddleware(server.authMiddleware(http.HandlerFunc(server.deregisterHandler))))
-	router.Handle("/poll", server.corsMiddleware(server.authMiddleware(http.HandlerFunc(server.pollHandler))))
-	router.Handle("/metrics", server.corsMiddleware(server.authMiddleware(http.HandlerFunc(server.metricsHandler))))
-	server.tlsserver = http.Server{Addr: options.ListenIP + ":443", Handler: router, ErrorLog: log.New(&noopLogger{}, "", 0)}
-	server.nontlsserver = http.Server{Addr: options.ListenIP + ":80", Handler: router, ErrorLog: log.New(&noopLogger{}, "", 0)}
+	http.DefaultServeMux.Handle("/", server.logger(http.HandlerFunc(server.defaultHandler)))
+	http.DefaultServeMux.Handle("/register", server.corsMiddleware(server.authMiddleware(http.HandlerFunc(server.registerHandler))))
+	http.DefaultServeMux.Handle("/deregister", server.corsMiddleware(server.authMiddleware(http.HandlerFunc(server.deregisterHandler))))
+	http.DefaultServeMux.Handle("/poll", server.corsMiddleware(server.authMiddleware(http.HandlerFunc(server.pollHandler))))
+	http.DefaultServeMux.Handle("/metrics", server.corsMiddleware(server.authMiddleware(http.HandlerFunc(server.metricsHandler))))
+
+	server.tlsserver = http.Server{Addr: options.ListenIP + ":443", Handler: http.DefaultServeMux, ErrorLog: log.New(&noopLogger{}, "", 0)}
+	server.nontlsserver = http.Server{Addr: options.ListenIP + ":80", Handler: http.DefaultServeMux, ErrorLog: log.New(&noopLogger{}, "", 0)}
 	return server, nil
 }
 
