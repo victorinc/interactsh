@@ -74,38 +74,16 @@ func (h *DNSServer) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 	} else if r.Question[0].Qtype == dns.TypeA || r.Question[0].Qtype == dns.TypeANY {
 		nsHeader := dns.RR_Header{Name: dns.Fqdn(domain), Rrtype: dns.TypeNS, Class: dns.ClassINET, Ttl: h.timeToLive}
 
-		handleClould := func(ipAddress net.IP) {
-			m.Answer = append(m.Answer, &dns.A{Hdr: dns.RR_Header{Name: dns.Fqdn(domain), Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: h.timeToLive}, A: ipAddress})
-
-			m.Ns = append(m.Ns, &dns.NS{Hdr: nsHeader, Ns: h.ns1Domain})
-			m.Ns = append(m.Ns, &dns.NS{Hdr: nsHeader, Ns: h.ns2Domain})
-			m.Extra = append(m.Extra, &dns.A{Hdr: dns.RR_Header{Name: h.ns1Domain, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: h.timeToLive}, A: h.ipAddress})
-			m.Extra = append(m.Extra, &dns.A{Hdr: dns.RR_Header{Name: h.ns2Domain, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: h.timeToLive}, A: h.ipAddress})
-		}
-
-		handleAppWithCname := func(cname string, ips ...net.IP) {
-			fqdnCname := dns.Fqdn(cname)
-			m.Answer = append(m.Answer, &dns.CNAME{Hdr: dns.RR_Header{Name: dns.Fqdn(domain), Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: h.timeToLive}, Target: fqdnCname})
-			for _, ip := range ips {
-				m.Answer = append(m.Answer, &dns.A{Hdr: dns.RR_Header{Name: fqdnCname, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: h.timeToLive}, A: ip})
-			}
-
-			m.Ns = append(m.Ns, &dns.NS{Hdr: nsHeader, Ns: h.ns1Domain})
-			m.Ns = append(m.Ns, &dns.NS{Hdr: nsHeader, Ns: h.ns2Domain})
-			m.Extra = append(m.Extra, &dns.A{Hdr: dns.RR_Header{Name: h.ns1Domain, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: h.timeToLive}, A: h.ipAddress})
-			m.Extra = append(m.Extra, &dns.A{Hdr: dns.RR_Header{Name: h.ns2Domain, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: h.timeToLive}, A: h.ipAddress})
-		}
-
 		// check for clould providers
 		switch {
 		case strings.EqualFold(domain, "aws"+h.dotDomain):
-			handleClould(net.ParseIP("169.254.169.254"))
+			h.handleCloud(domain, net.ParseIP("169.254.169.254"), nsHeader, m)
 		case strings.EqualFold(domain, "alibaba"+h.dotDomain):
-			handleClould(net.ParseIP("100.100.100.200"))
+			h.handleCloud(domain, net.ParseIP("100.100.100.200"), nsHeader, m)
 		case strings.EqualFold(domain, "app"+h.dotDomain):
-			handleAppWithCname("projectdiscovery.github.io", net.ParseIP("185.199.108.153"), net.ParseIP("185.199.110.153"), net.ParseIP("185.199.111.153"), net.ParseIP("185.199.108.153"))
+			h.handleAppWithCname(domain, "projectdiscovery.github.io", m, nsHeader, net.ParseIP("185.199.108.153"), net.ParseIP("185.199.110.153"), net.ParseIP("185.199.111.153"), net.ParseIP("185.199.108.153"))
 		default:
-			handleClould(h.ipAddress)
+			h.handleCloud(domain, h.ipAddress, nsHeader, m)
 		}
 
 	} else if r.Question[0].Qtype == dns.TypeSOA {
@@ -206,4 +184,26 @@ func toQType(ttype uint16) (rtype string) {
 		rtype = "AAAA"
 	}
 	return
+}
+
+func (h *DNSServer) handleCloud(domain string, ipAddress net.IP, nsHeader dns.RR_Header, m *dns.Msg) {
+	m.Answer = append(m.Answer, &dns.A{Hdr: dns.RR_Header{Name: dns.Fqdn(domain), Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: h.timeToLive}, A: ipAddress})
+
+	m.Ns = append(m.Ns, &dns.NS{Hdr: nsHeader, Ns: h.ns1Domain})
+	m.Ns = append(m.Ns, &dns.NS{Hdr: nsHeader, Ns: h.ns2Domain})
+	m.Extra = append(m.Extra, &dns.A{Hdr: dns.RR_Header{Name: h.ns1Domain, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: h.timeToLive}, A: h.ipAddress})
+	m.Extra = append(m.Extra, &dns.A{Hdr: dns.RR_Header{Name: h.ns2Domain, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: h.timeToLive}, A: h.ipAddress})
+}
+
+func (h *DNSServer) handleAppWithCname(domain, cname string, m *dns.Msg, nsHeader dns.RR_Header, ips ...net.IP) {
+	fqdnCname := dns.Fqdn(cname)
+	m.Answer = append(m.Answer, &dns.CNAME{Hdr: dns.RR_Header{Name: dns.Fqdn(domain), Rrtype: dns.TypeCNAME, Class: dns.ClassINET, Ttl: h.timeToLive}, Target: fqdnCname})
+	for _, ip := range ips {
+		m.Answer = append(m.Answer, &dns.A{Hdr: dns.RR_Header{Name: fqdnCname, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: h.timeToLive}, A: ip})
+	}
+
+	m.Ns = append(m.Ns, &dns.NS{Hdr: nsHeader, Ns: h.ns1Domain})
+	m.Ns = append(m.Ns, &dns.NS{Hdr: nsHeader, Ns: h.ns2Domain})
+	m.Extra = append(m.Extra, &dns.A{Hdr: dns.RR_Header{Name: h.ns1Domain, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: h.timeToLive}, A: h.ipAddress})
+	m.Extra = append(m.Extra, &dns.A{Hdr: dns.RR_Header{Name: h.ns2Domain, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: h.timeToLive}, A: h.ipAddress})
 }

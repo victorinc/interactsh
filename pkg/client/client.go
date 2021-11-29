@@ -147,9 +147,10 @@ func (c *Client) getInteractions(callback InteractionCallback) error {
 			gologger.Error().Msgf("Could not decrypt interaction: %v\n", err)
 			continue
 		}
+
 		interaction := &server.Interaction{}
 		if err := jsoniter.Unmarshal(plaintext, interaction); err != nil {
-			gologger.Error().Msgf("Could not unmarshal interaction data interaction: %v\n", err)
+			gologger.Error().Msgf("Could not unmarshal data interaction: %v\n", err)
 			continue
 		}
 		callback(interaction)
@@ -158,7 +159,7 @@ func (c *Client) getInteractions(callback InteractionCallback) error {
 	for _, plaintext := range response.Extra {
 		interaction := &server.Interaction{}
 		if err := jsoniter.UnmarshalFromString(plaintext, interaction); err != nil {
-			gologger.Error().Msgf("Could not unmarshal interaction data interaction: %v\n", err)
+			gologger.Error().Msgf("Could not unmarshal extra interaction: %v\n", err)
 			continue
 		}
 		callback(interaction)
@@ -168,7 +169,7 @@ func (c *Client) getInteractions(callback InteractionCallback) error {
 	for _, data := range response.TLDData {
 		interaction := &server.Interaction{}
 		if err := jsoniter.UnmarshalFromString(data, interaction); err != nil {
-			gologger.Error().Msgf("Could not unmarshal interaction data interaction: %v\n", err)
+			gologger.Error().Msgf("Could not unmarshal root-tld data interaction: %v\n", err)
 			continue
 		}
 		callback(interaction)

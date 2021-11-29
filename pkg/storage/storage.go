@@ -99,7 +99,7 @@ const defaultCacheMaxSize = 1000000
 
 // New creates a new storage instance for interactsh data.
 func New(evictionTTL time.Duration) *Storage {
-	return &Storage{cache: ccache.New(ccache.Configure().MaxSize(defaultCacheMaxSize)), evictionTTL: evictionTTL}
+	return &Storage{cache: ccache.New(ccache.Configure().MaxSize(defaultCacheMaxSize).Buckets(32)), evictionTTL: evictionTTL}
 }
 
 // SetIDPublicKey sets the correlation ID and publicKey into the cache for further operations.

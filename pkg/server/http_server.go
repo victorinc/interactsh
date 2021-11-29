@@ -12,6 +12,10 @@ import (
 	"strings"
 	"time"
 
+	_ "net/http/pprof"
+
+	_ "github.com/mkevac/debugcharts"
+
 	jsoniter "github.com/json-iterator/go"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"
