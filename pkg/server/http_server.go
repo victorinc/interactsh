@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
+	"runtime"
 	"strings"
 	"time"
 
@@ -42,6 +43,7 @@ func (l *noopLogger) Write(p []byte) (n int, err error) {
 func NewHTTPServer(options *Options) (*HTTPServer, error) {
 	gologger.DefaultLogger.SetMaxLevel(levels.LevelDebug)
 
+	runtime.SetBlockProfileRate(1) // enable block profiling
 	server := &HTTPServer{options: options, domain: strings.TrimSuffix(options.Domain, ".")}
 
 	http.DefaultServeMux.Handle("/", server.logger(http.HandlerFunc(server.defaultHandler)))
