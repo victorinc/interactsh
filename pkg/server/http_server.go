@@ -9,12 +9,14 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
+	"net/http/pprof"
 	"runtime"
 	"strings"
 	"time"
 
 	_ "net/http/pprof"
 
+	"github.com/gorilla/mux"
 	_ "github.com/mkevac/debugcharts"
 
 	jsoniter "github.com/json-iterator/go"
@@ -46,14 +48,24 @@ func NewHTTPServer(options *Options) (*HTTPServer, error) {
 	runtime.SetBlockProfileRate(1) // enable block profiling
 	server := &HTTPServer{options: options, domain: strings.TrimSuffix(options.Domain, ".")}
 
-	http.DefaultServeMux.Handle("/", server.logger(http.HandlerFunc(server.defaultHandler)))
-	http.DefaultServeMux.Handle("/register", server.corsMiddleware(server.authMiddleware(http.HandlerFunc(server.registerHandler))))
-	http.DefaultServeMux.Handle("/deregister", server.corsMiddleware(server.authMiddleware(http.HandlerFunc(server.deregisterHandler))))
-	http.DefaultServeMux.Handle("/poll", server.corsMiddleware(server.authMiddleware(http.HandlerFunc(server.pollHandler))))
-	http.DefaultServeMux.Handle("/metrics", server.corsMiddleware(server.authMiddleware(http.HandlerFunc(server.metricsHandler))))
+	router := mux.NewRouter()
+	router.Handle("/", server.logger(http.HandlerFunc(server.defaultHandler)))
+	router.Handle("/register", server.corsMiddleware(server.authMiddleware(http.HandlerFunc(server.registerHandler))))
+	router.Handle("/deregister", server.corsMiddleware(server.authMiddleware(http.HandlerFunc(server.deregisterHandler))))
+	router.Handle("/poll", server.corsMiddleware(server.authMiddleware(http.HandlerFunc(server.pollHandler))))
+	router.Handle("/metrics", server.corsMiddleware(server.authMiddleware(http.HandlerFunc(server.metricsHandler))))
 
-	server.tlsserver = http.Server{Addr: options.ListenIP + ":443", Handler: http.DefaultServeMux, ErrorLog: log.New(&noopLogger{}, "", 0)}
-	server.nontlsserver = http.Server{Addr: options.ListenIP + ":80", Handler: http.DefaultServeMux, ErrorLog: log.New(&noopLogger{}, "", 0)}
+	debugRouter := mux.NewRouter()
+	debugRouter.HandleFunc("/debug/pprof/", pprof.Index)
+	debugRouter.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	debugRouter.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	debugRouter.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	debugRouter.HandleFunc("/debug/pprof/trace", pprof.Trace)
+
+	go http.ListenAndServe("127.0.0.1:8082", debugRouter) // start debug server as well for testing.
+
+	server.tlsserver = http.Server{Addr: options.ListenIP + ":443", Handler: router, ErrorLog: log.New(&noopLogger{}, "", 0)}
+	server.nontlsserver = http.Server{Addr: options.ListenIP + ":80", Handler: router, ErrorLog: log.New(&noopLogger{}, "", 0)}
 	return server, nil
 }
 
@@ -171,17 +183,18 @@ func (h *HTTPServer) defaultHandler(w http.ResponseWriter, req *http.Request) {
 	reflection := URLReflection(req.Host)
 	w.Header().Set("Server", h.domain)
 
-	if req.URL.Path == "/" && reflection == "" {
+	switch {
+	case req.URL.Path == "/" && reflection == "":
 		fmt.Fprintf(w, banner, h.domain)
-	} else if strings.EqualFold(req.URL.Path, "/robots.txt") {
+	case req.URL.Path == "/robots.txt":
 		fmt.Fprintf(w, "User-agent: *\nDisallow: / # %s", reflection)
-	} else if strings.HasSuffix(req.URL.Path, ".json") {
+	case strings.HasSuffix(req.URL.Path, ".json"):
 		fmt.Fprintf(w, "{\"data\":\"%s\"}", reflection)
 		w.Header().Set("Content-Type", "application/json")
-	} else if strings.HasSuffix(req.URL.Path, ".xml") {
+	case strings.HasSuffix(req.URL.Path, ".xml"):
 		fmt.Fprintf(w, "<data>%s</data>", reflection)
 		w.Header().Set("Content-Type", "application/xml")
-	} else {
+	default:
 		fmt.Fprintf(w, "<html><head></head><body>%s</body></html>", reflection)
 	}
 }

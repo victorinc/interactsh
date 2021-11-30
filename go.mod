@@ -18,6 +18,7 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/google/uuid v1.3.0
+	github.com/gorilla/mux v1.7.3
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/jasonlvhit/gocron v0.0.1
 	github.com/json-iterator/go v1.1.12
@@ -25,7 +26,7 @@ require (
 	github.com/klauspost/compress v1.13.6
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/miekg/dns v1.1.43
-	github.com/mkevac/debugcharts v0.0.0-20191222103121-ae1c48aa8615 // indirect
+	github.com/mkevac/debugcharts v0.0.0-20191222103121-ae1c48aa8615
 	github.com/onsi/gomega v1.12.0 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/fastdialer v0.0.13-0.20210824195254-0113c1406542
