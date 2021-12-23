@@ -8,7 +8,6 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
@@ -17,7 +16,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/karlseguin/ccache/v2"
 	"github.com/klauspost/compress/zlib"
 	"github.com/pkg/errors"
@@ -37,10 +35,7 @@ type CorrelationData struct {
 	// dataMutex is a mutex for the data slice.
 	dataMutex *sync.Mutex
 	// secretkey is a secret key for original user verification
-	secretKey string
-	// AESKey is the AES encryption key in encrypted format.
-	AESKey string `json:"aes-key"`
-	aesKey []byte // decrypted AES key for signing
+	token string
 }
 
 type CacheMetrics struct {
@@ -103,30 +98,17 @@ func New(evictionTTL time.Duration) *Storage {
 }
 
 // SetIDPublicKey sets the correlation ID and publicKey into the cache for further operations.
-func (s *Storage) SetIDPublicKey(correlationID, secretKey string, publicKey string) error {
+func (s *Storage) SetIDPublicKey(sessionID, token string) error {
 	// If we already have this correlation ID, return.
-	if s.cache.Get(correlationID) != nil {
-		return errors.New("correlation-id provided is invalid")
-	}
-	publicKeyData, err := parseB64RSAPublicKeyFromPEM(publicKey)
-	if err != nil {
-		return errors.Wrap(err, "could not read public Key")
-	}
-	aesKey := uuid.New().String()[:32]
-
-	ciphertext, err := rsa.EncryptOAEP(sha256.New(), rand.Reader, publicKeyData, []byte(aesKey), []byte(""))
-	if err != nil {
-		return errors.New("could not encrypt event data")
+	if s.cache.Get(sessionID) != nil {
+		return errors.New("session-id provided is invalid")
 	}
 
 	data := &CorrelationData{
-		Data:      make([]string, 0),
-		secretKey: secretKey,
-		dataMutex: &sync.Mutex{},
-		aesKey:    []byte(aesKey),
-		AESKey:    base64.StdEncoding.EncodeToString(ciphertext),
+		Data:  make([]string, 0),
+		token: token,
 	}
-	s.cache.Set(correlationID, data, s.evictionTTL)
+	s.cache.Set(sessionID, data, s.evictionTTL)
 	return nil
 }
 
@@ -141,22 +123,22 @@ func (s *Storage) SetID(ID string) error {
 
 // AddInteraction adds an interaction data to the correlation ID after encrypting
 // it with Public Key for the provided correlation ID.
-func (s *Storage) AddInteraction(correlationID string, data []byte) error {
-	item := s.cache.Get(correlationID)
+func (s *Storage) AddInteraction(sessionID string, data []byte) error {
+	item := s.cache.Get(sessionID)
 	if item == nil {
-		return errors.New("could not get correlation-id from cache")
+		return errors.New("could not get session-id from cache")
 	}
 	value, ok := item.Value().(*CorrelationData)
 	if !ok {
-		return errors.New("invalid correlation-id cache value found")
+		return errors.New("invalid session-id cache value found")
 	}
 
-	ct, err := aesEncrypt(value.aesKey, data)
-	if err != nil {
-		return errors.Wrap(err, "could not encrypt event data")
-	}
+	// ct, err := aesEncrypt(value.aesKey, data)
+	// if err != nil {
+	// 	return errors.Wrap(err, "could not encrypt event data")
+	// }
 	value.dataMutex.Lock()
-	value.Data = append(value.Data, ct)
+	value.Data = append(value.Data, string(data))
 	value.dataMutex.Unlock()
 	return nil
 }
@@ -165,11 +147,11 @@ func (s *Storage) AddInteraction(correlationID string, data []byte) error {
 func (s *Storage) AddInteractionWithId(id string, data []byte) error {
 	item := s.cache.Get(id)
 	if item == nil {
-		return errors.New("could not get correlation-id from cache")
+		return errors.New("could not get session-id from cache")
 	}
 	value, ok := item.Value().(*CorrelationData)
 	if !ok {
-		return errors.New("invalid correlation-id cache value found")
+		return errors.New("invalid session-id cache value found")
 	}
 
 	// Gzip compress to save memory for storage
@@ -202,11 +184,11 @@ func (s *Storage) GetInteractions(correlationID, secret string) ([]string, strin
 	if !ok {
 		return nil, "", errors.New("invalid correlation-id cache value found")
 	}
-	if !strings.EqualFold(value.secretKey, secret) {
-		return nil, "", errors.New("invalid secret key passed for user")
-	}
+	// if !strings.EqualFold(value.secretKey, secret) {
+	// 	return nil, "", errors.New("invalid secret key passed for user")
+	// }
 	data := value.GetInteractions()
-	return data, value.AESKey, nil
+	return data, "", nil // 3rd option was value.AESKey
 }
 
 // GetInteractions returns the interactions for a id and empty the cache
@@ -224,22 +206,22 @@ func (s *Storage) GetInteractionsWithId(id string) ([]string, error) {
 }
 
 // RemoveID removes data for a correlation ID and data related to it.
-func (s *Storage) RemoveID(correlationID, secret string) error {
-	item := s.cache.Get(correlationID)
+func (s *Storage) RemoveID(sessionID, token string) error {
+	item := s.cache.Get(sessionID)
 	if item == nil {
-		return errors.New("could not get correlation-id from cache")
+		return errors.New("could not get session-id from cache")
 	}
 	value, ok := item.Value().(*CorrelationData)
 	if !ok {
-		return errors.New("invalid correlation-id cache value found")
+		return errors.New("invalid session-id cache value found")
 	}
-	if !strings.EqualFold(value.secretKey, secret) {
-		return errors.New("invalid secret key passed for deregister")
-	}
+	// if !strings.EqualFold(value.secretKey, secret) {
+	// 	return errors.New("invalid secret key passed for deregister")
+	// }
 	value.dataMutex.Lock()
 	value.Data = nil
 	value.dataMutex.Unlock()
-	s.cache.Delete(correlationID)
+	s.cache.Delete(sessionID)
 	return nil
 }
 

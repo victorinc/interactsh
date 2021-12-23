@@ -10,10 +10,11 @@ import (
 	"strings"
 	"time"
 
+	"server/pkg/filewatcher"
+
 	jsoniter "github.com/json-iterator/go"
 	"github.com/projectdiscovery/fileutil"
 	"github.com/projectdiscovery/gologger"
-	"github.com/projectdiscovery/interactsh/pkg/filewatcher"
 	"github.com/projectdiscovery/stringsutil"
 )
 

@@ -159,7 +159,7 @@ func (h *DNSServer) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 		}
 	}
 	if uniqueID != "" {
-		correlationID := uniqueID[:20]
+		sessionID := uniqueID[:20]
 		host, _, _ := net.SplitHostPort(w.RemoteAddr().String())
 		interaction := &Interaction{
 			Protocol:      "dns",
@@ -176,7 +176,7 @@ func (h *DNSServer) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 			gologger.Warning().Msgf("Could not encode dns interaction: %s\n", err)
 		} else {
 			gologger.Debug().Msgf("DNS Interaction: \n%s\n", buffer.String())
-			if err := h.options.Storage.AddInteraction(correlationID, buffer.Bytes()); err != nil {
+			if err := h.options.Storage.AddInteraction(sessionID, buffer.Bytes()); err != nil {
 				gologger.Warning().Msgf("Could not store dns interaction: %s\n", err)
 			}
 		}
