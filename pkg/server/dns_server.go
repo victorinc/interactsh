@@ -146,25 +146,26 @@ func (h *DNSServer) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 		}
 	}
 
+	// if strings.HasSuffix(domain, h.dotDomain) {
+	// 	parts := strings.Split(domain, ".")
+	// 	for i, part := range parts {
+	// 		if len(part) == 33 {
+	// 			uniqueID = part
+	// 			fullID = part
+	// 			if i+1 <= len(parts) {
+	// 				fullID = strings.Join(parts[:i+1], ".")
+	// 			}
+	// 		}
+	// 	}
+	// }
 	if strings.HasSuffix(domain, h.dotDomain) {
-		parts := strings.Split(domain, ".")
-		for i, part := range parts {
-			if len(part) == 33 {
-				uniqueID = part
-				fullID = part
-				if i+1 <= len(parts) {
-					fullID = strings.Join(parts[:i+1], ".")
-				}
-			}
-		}
-	}
-	if uniqueID != "" {
-		sessionID := uniqueID[:20]
+		sessionID := strings.Split(domain, ".")[0]
 		host, _, _ := net.SplitHostPort(w.RemoteAddr().String())
 		interaction := &Interaction{
-			Protocol:      "dns",
-			UniqueID:      uniqueID,
-			FullId:        fullID,
+			Protocol: "dns",
+			// todo: check if required
+			UniqueID:      sessionID,
+			FullId:        sessionID,
 			QType:         toQType(r.Question[0].Qtype),
 			RawRequest:    requestMsg,
 			RawResponse:   responseMsg,

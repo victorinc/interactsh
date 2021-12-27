@@ -255,13 +255,13 @@ func (h *HTTPServer) pollHandler(w http.ResponseWriter, req *http.Request) {
 		jsonError(w, "no id specified for poll", http.StatusBadRequest)
 		return
 	}
-	secret := req.URL.Query().Get("secret")
-	if secret == "" {
-		jsonError(w, "no secret specified for poll", http.StatusBadRequest)
-		return
-	}
+	// secret := req.URL.Query().Get("secret")
+	// if secret == "" {
+	// 	jsonError(w, "no secret specified for poll", http.StatusBadRequest)
+	// 	return
+	// }
 
-	data, aesKey, err := h.options.Storage.GetInteractions(ID, secret)
+	data, aesKey, err := h.options.Storage.GetInteractions(ID, "") // was secret
 	if err != nil {
 		gologger.Warning().Msgf("Could not get interactions for %s: %s\n", ID, err)
 		jsonError(w, fmt.Sprintf("could not get interactions: %s", err), http.StatusBadRequest)
