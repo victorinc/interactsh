@@ -79,7 +79,7 @@ func (h *SMTPServer) ListenAndServe(autoTLS *acme.AutoTLS) {
 
 // defaultHandler is a handler for default collaborator requests
 func (h *SMTPServer) defaultHandler(remoteAddr net.Addr, from string, to []string, data []byte) error {
-	var uniqueID, fullID string
+	var sessionId string
 
 	dataString := string(data)
 	gologger.Debug().Msgf("New SMTP request: %s %s %s %s\n", remoteAddr, from, to, dataString)
@@ -92,8 +92,7 @@ func (h *SMTPServer) defaultHandler(remoteAddr net.Addr, from string, to []strin
 			address := addr[strings.Index(addr, "@"):]
 			interaction := &Interaction{
 				Protocol:      "smtp",
-				UniqueID:      address,
-				FullId:        address,
+				SessionId:     address,
 				RawRequest:    dataString,
 				SMTPFrom:      from,
 				RemoteAddress: host,
@@ -111,28 +110,33 @@ func (h *SMTPServer) defaultHandler(remoteAddr net.Addr, from string, to []strin
 		}
 	}
 
+	// for _, addr := range to {
+	// 	if len(addr) > 33 && strings.Contains(addr, "@") {
+	// 		parts := strings.Split(addr[strings.Index(addr, "@")+1:], ".")
+	// 		for i, part := range parts {
+	// 			if len(part) == 33 {
+	// 				uniqueID = part
+	// 				fullID = part
+	// 				if i+1 <= len(parts) {
+	// 					fullID = strings.Join(parts[:i+1], ".")
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
+
 	for _, addr := range to {
-		if len(addr) > 33 && strings.Contains(addr, "@") {
-			parts := strings.Split(addr[strings.Index(addr, "@")+1:], ".")
-			for i, part := range parts {
-				if len(part) == 33 {
-					uniqueID = part
-					fullID = part
-					if i+1 <= len(parts) {
-						fullID = strings.Join(parts[:i+1], ".")
-					}
-				}
-			}
+		if strings.Contains(addr, "@") {
+			sessionId = strings.Split(addr[strings.Index(addr, "@")+1:], ".")[0]
 		}
 	}
-	if uniqueID != "" {
+
+	if sessionId != "" {
 		host, _, _ := net.SplitHostPort(remoteAddr.String())
 
-		correlationID := uniqueID[:20]
 		interaction := &Interaction{
 			Protocol:      "smtp",
-			UniqueID:      uniqueID,
-			FullId:        fullID,
+			SessionId:     sessionId,
 			RawRequest:    dataString,
 			SMTPFrom:      from,
 			RemoteAddress: host,
@@ -143,7 +147,7 @@ func (h *SMTPServer) defaultHandler(remoteAddr net.Addr, from string, to []strin
 			gologger.Warning().Msgf("Could not encode smtp interaction: %s\n", err)
 		} else {
 			gologger.Debug().Msgf("%s\n", buffer.String())
-			if err := h.options.Storage.AddInteraction(correlationID, buffer.Bytes()); err != nil {
+			if err := h.options.Storage.AddInteraction(sessionId, buffer.Bytes()); err != nil {
 				gologger.Warning().Msgf("Could not store smtp interaction: %s\n", err)
 			}
 		}

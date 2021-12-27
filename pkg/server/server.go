@@ -11,10 +11,8 @@ import (
 type Interaction struct {
 	// Protocol for interaction, can contains HTTP/DNS/SMTP,etc.
 	Protocol string `json:"protocol"`
-	// UniqueID is the uniqueID for the subdomain receiving the interaction.
-	UniqueID string `json:"unique-id"`
-	// FullId is the full path for the subdomain receiving the interaction.
-	FullId string `json:"full-id"`
+	// SessionId is the sessionId for the subdomain receiving the interaction.
+	SessionId string `json:"session-id"`
 	// QType is the question type for the interaction
 	QType string `json:"q-type,omitempty"`
 	// RawRequest is the raw request received by the interactsh server.

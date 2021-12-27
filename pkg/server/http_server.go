@@ -97,8 +97,7 @@ func (h *HTTPServer) logger(handler http.Handler) http.HandlerFunc {
 			host, _, _ := net.SplitHostPort(r.RemoteAddr)
 			interaction := &Interaction{
 				Protocol:      "http",
-				UniqueID:      r.Host,
-				FullId:        r.Host,
+				SessionId:     r.Host,
 				RawRequest:    reqString,
 				RawResponse:   resoString,
 				RemoteAddress: host,
@@ -115,51 +114,53 @@ func (h *HTTPServer) logger(handler http.Handler) http.HandlerFunc {
 			}
 		}
 
-		var uniqueID, fullID string
-		parts := strings.Split(r.Host, ".")
-		for i, part := range parts {
-			if len(part) == 33 {
-				uniqueID = part
-				fullID = part
-				if i+1 <= len(parts) {
-					fullID = strings.Join(parts[:i+1], ".")
-				}
-			}
-		}
-		if uniqueID != "" {
-			correlationID := uniqueID[:20]
+		// var uniqueID, fullID string
+		// parts := strings.Split(r.Host, ".")
+		// for i, part := range parts {
+		// 	if len(part) == 33 {
+		// 		uniqueID = part
+		// 		fullID = part
+		// 		if i+1 <= len(parts) {
+		// 			fullID = strings.Join(parts[:i+1], ".")
+		// 		}
+		// 	}
+		// }
+		SessionId := strings.Split(r.Host, ".")[0]
 
-			host, _, _ := net.SplitHostPort(r.RemoteAddr)
-			interaction := &Interaction{
-				Protocol:      "http",
-				UniqueID:      uniqueID,
-				FullId:        fullID,
-				RawRequest:    reqString,
-				RawResponse:   resoString,
-				RemoteAddress: host,
-				Timestamp:     time.Now(),
-			}
-			buffer := &bytes.Buffer{}
-			if err := jsoniter.NewEncoder(buffer).Encode(interaction); err != nil {
-				gologger.Warning().Msgf("Could not encode http interaction: %s\n", err)
-			} else {
-				gologger.Debug().Msgf("HTTP Interaction: \n%s\n", buffer.String())
-				if err := h.options.Storage.AddInteraction(correlationID, buffer.Bytes()); err != nil {
-					gologger.Warning().Msgf("Could not store http interaction: %s\n", err)
-				}
+		host, _, _ := net.SplitHostPort(r.RemoteAddr)
+		interaction := &Interaction{
+			Protocol:      "http",
+			SessionId:     SessionId,
+			RawRequest:    reqString,
+			RawResponse:   resoString,
+			RemoteAddress: host,
+			Timestamp:     time.Now(),
+		}
+		buffer := &bytes.Buffer{}
+		if err := jsoniter.NewEncoder(buffer).Encode(interaction); err != nil {
+			gologger.Warning().Msgf("Could not encode http interaction: %s\n", err)
+		} else {
+			gologger.Debug().Msgf("HTTP Interaction: \n%s\n", buffer.String())
+			if err := h.options.Storage.AddInteraction(SessionId, buffer.Bytes()); err != nil {
+				gologger.Warning().Msgf("Could not store http interaction: %s\n", err)
 			}
 		}
 	}
 }
 
-const banner = `<h1> Interactsh Server </h1>
+const banner = `<h1> This Domain Belongs to Pingsafe </h1>
 
-<a href='https://github.com/projectdiscovery/interactsh'>Interactsh</a> is an <b>open-source solution</b> for out-of-band data extraction. It is a tool designed to detect bugs that cause external interactions. These bugs include, Blind SQLi, Blind CMDi, SSRF, etc. <br><br>
-
-If you find communications or exchanges with the <b>%s</b> server in your logs, it is possible that someone has been testing your applications.<br><br>
-
-You should review the time when these interactions were initiated to identify the person responsible for this testing.
+If you have any queries, please feel free to contact support@pingsafe.ai for any assistance.
 `
+
+// const banner = `<h1> Interactsh Server </h1>
+
+// <a href='https://github.com/projectdiscovery/interactsh'>Interactsh</a> is an <b>open-source solution</b> for out-of-band data extraction. It is a tool designed to detect bugs that cause external interactions. These bugs include, Blind SQLi, Blind CMDi, SSRF, etc. <br><br>
+
+// If you find communications or exchanges with the <b>%s</b> server in your logs, it is possible that someone has been testing your applications.<br><br>
+
+// You should review the time when these interactions were initiated to identify the person responsible for this testing.
+// `
 
 // defaultHandler is a handler for default collaborator requests
 func (h *HTTPServer) defaultHandler(w http.ResponseWriter, req *http.Request) {
@@ -167,7 +168,7 @@ func (h *HTTPServer) defaultHandler(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Server", h.domain)
 
 	if req.URL.Path == "/" && reflection == "" {
-		fmt.Fprintf(w, banner, h.domain)
+		fmt.Fprintf(w, banner)
 	} else if strings.EqualFold(req.URL.Path, "/robots.txt") {
 		fmt.Fprintf(w, "User-agent: *\nDisallow: / # %s", reflection)
 	} else if strings.HasSuffix(req.URL.Path, ".json") {
@@ -200,6 +201,7 @@ type RegisterRequest struct {
 
 // registerHandler is a handler for client register requests
 func (h *HTTPServer) registerHandler(w http.ResponseWriter, req *http.Request) {
+	fmt.Println("In /register")
 	r := &RegisterRequest{}
 	if err := jsoniter.NewDecoder(req.Body).Decode(r); err != nil {
 		gologger.Warning().Msgf("Could not decode json body: %s\n", err)
@@ -225,6 +227,7 @@ type DeregisterRequest struct {
 
 // deregisterHandler is a handler for client deregister requests
 func (h *HTTPServer) deregisterHandler(w http.ResponseWriter, req *http.Request) {
+	fmt.Println("In /deregister")
 	r := &DeregisterRequest{}
 	if err := jsoniter.NewDecoder(req.Body).Decode(r); err != nil {
 		gologger.Warning().Msgf("Could not decode json body: %s\n", err)
