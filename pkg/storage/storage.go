@@ -105,8 +105,9 @@ func (s *Storage) SetIDPublicKey(sessionID, token string) error {
 	}
 
 	data := &CorrelationData{
-		Data:  make([]string, 0),
-		token: token,
+		Data:      make([]string, 0),
+		dataMutex: &sync.Mutex{},
+		token:     token,
 	}
 	s.cache.Set(sessionID, data, s.evictionTTL)
 	return nil
