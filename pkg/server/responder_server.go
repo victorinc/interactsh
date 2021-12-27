@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"server/pkg/filewatcher"
+	"github.com/victorinc/interactsh/pkg/filewatcher"
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/projectdiscovery/fileutil"

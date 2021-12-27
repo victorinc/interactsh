@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"server/pkg/server/acme"
+	"github.com/victorinc/interactsh/pkg/server/acme"
 
 	"git.mills.io/prologic/smtpd"
 	jsoniter "github.com/json-iterator/go"

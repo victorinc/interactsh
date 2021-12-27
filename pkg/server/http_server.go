@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"server/pkg/server/acme"
+	"github.com/victorinc/interactsh/pkg/server/acme"
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/projectdiscovery/gologger"

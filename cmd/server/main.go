@@ -14,9 +14,9 @@ import (
 	"strings"
 	"time"
 
-	"server/pkg/server"
-	"server/pkg/server/acme"
-	"server/pkg/storage"
+	"github.com/victorinc/interactsh/pkg/server"
+	"github.com/victorinc/interactsh/pkg/server/acme"
+	"github.com/victorinc/interactsh/pkg/storage"
 
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"

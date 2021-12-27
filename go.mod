@@ -1,4 +1,4 @@
-module server
+module github.com/victorinc/interactsh
 
 go 1.17
 
