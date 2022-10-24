@@ -36,7 +36,7 @@ require (
 	github.com/remeh/sizedwaitgroup v1.0.0
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	github.com/rs/xid v1.3.0
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.8.1
 	go.etcd.io/bbolt v1.3.6 // indirect
 	goftp.io/server/v2 v2.0.0
 	golang.org/x/exp v0.0.0-20210826195003-46c773283d9d // indirect
