@@ -21,28 +21,23 @@ require (
 	github.com/karlseguin/ccache/v2 v2.0.8
 	github.com/klauspost/compress v1.13.6
 	github.com/kr/pretty v0.3.0 // indirect
-	github.com/miekg/dns v1.1.43
+	github.com/miekg/dns v1.1.50
 	github.com/onsi/gomega v1.12.0 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/fastdialer v0.0.13-0.20210824195254-0113c1406542
-	github.com/projectdiscovery/fileutil v0.0.0-20210804142714-ebba15fa53ca
+	github.com/projectdiscovery/fileutil v0.0.3
 	github.com/projectdiscovery/gologger v1.1.4
 	github.com/projectdiscovery/hmap v0.0.2-0.20210825180603-fca7166c158f // indirect
-	github.com/projectdiscovery/iputil v0.0.0-20210804143329-3a30fcde43f3 // indirect
-	github.com/projectdiscovery/mapcidr v0.0.8 // indirect
-	github.com/projectdiscovery/retryabledns v1.0.12
+	github.com/projectdiscovery/retryabledns v1.0.17
 	github.com/projectdiscovery/retryablehttp-go v1.0.2
-	github.com/projectdiscovery/stringsutil v0.0.0-20210823090203-2f5f137e8e1d
+	github.com/projectdiscovery/stringsutil v0.0.2
 	github.com/remeh/sizedwaitgroup v1.0.0
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	github.com/rs/xid v1.3.0
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.8.1
 	go.etcd.io/bbolt v1.3.6 // indirect
 	goftp.io/server/v2 v2.0.0
 	golang.org/x/exp v0.0.0-20210826195003-46c773283d9d // indirect
-	golang.org/x/net v0.0.0-20210825183410-e898025ed96a // indirect
-	golang.org/x/sys v0.0.0-20210823070655-63515b42dcdf // indirect
-	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/corvus-ch/zbase32.v1 v1.0.0
 )
