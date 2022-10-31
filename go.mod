@@ -19,7 +19,7 @@ require (
 	github.com/jasonlvhit/gocron v0.0.1
 	github.com/json-iterator/go v1.1.12
 	github.com/karlseguin/ccache/v2 v2.0.8
-	github.com/klauspost/compress v1.13.6
+	github.com/klauspost/compress v1.15.12
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/miekg/dns v1.1.43
 	github.com/onsi/gomega v1.12.0 // indirect
